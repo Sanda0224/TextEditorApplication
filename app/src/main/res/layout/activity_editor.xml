@@ -1,0 +1,178 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <!-- App Title -->
+    <TextView
+        android:id="@+id/appTitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="12dp"
+        android:text="@string/codenest"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:gravity="center"
+        android:background="#2D294B"
+        android:textColor="#FFFFFF" />
+
+    <!-- File Operations -->
+    <LinearLayout
+        android:id="@+id/fileOperationsBar"
+        android:layout_width="match_parent"
+        android:layout_height="59dp"
+        android:layout_marginBottom="4dp"
+        android:background="#FFFAFAFA"
+        android:gravity="center"
+        android:orientation="horizontal">
+
+        <ImageButton
+            android:id="@+id/btn_new"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/new_file"
+            android:minWidth="48dp"
+            android:minHeight="48dp"
+            android:src="@drawable/ic_new" />
+
+        <ImageButton
+            android:id="@+id/btn_open"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/open_file"
+            android:minWidth="48dp"
+            android:minHeight="48dp"
+            android:src="@drawable/ic_open" />
+
+        <ImageButton
+            android:id="@+id/btn_save"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/save_file"
+            android:minWidth="48dp"
+            android:minHeight="48dp"
+            android:src="@drawable/ic_save" />
+
+        <ImageButton
+            android:id="@+id/btn_compile"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/save_file"
+            android:minWidth="48dp"
+            android:minHeight="48dp"
+            android:src="@drawable/ic_compile" />
+
+    </LinearLayout>
+
+    <EditText
+        android:id="@+id/code_editor"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:background="#FFFAFAFA"
+        android:fontFamily="monospace"
+        android:gravity="top|start"
+        android:inputType="textMultiLine|textNoSuggestions|textVisiblePassword"
+        android:overScrollMode="always"
+        android:padding="8dp"
+        android:scrollbars="vertical"
+        android:textColor="#FF000000"
+        android:textSize="14sp" />
+
+
+    <!-- Button Toolbar with Icons and Spacing -->
+    <LinearLayout
+        android:id="@+id/editOperationsBar"
+        android:layout_width="match_parent"
+        android:layout_height="59dp"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:background="#FFFAFAFA"
+        android:layout_marginBottom="4dp">
+
+        <ImageButton
+            android:id="@+id/btn_cut"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:minWidth="48dp"
+            android:minHeight="48dp"
+            android:layout_marginStart="8dp"
+            android:src="@drawable/ic_cut"
+            android:contentDescription="@string/undo"
+            android:background="?attr/selectableItemBackgroundBorderless" />
+
+        <ImageButton
+            android:id="@+id/btn_copy"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:minWidth="48dp"
+            android:minHeight="48dp"
+            android:layout_marginStart="8dp"
+            android:src="@drawable/ic_copy"
+            android:contentDescription="@string/undo"
+            android:background="?attr/selectableItemBackgroundBorderless" />
+
+        <ImageButton
+            android:id="@+id/btn_paste"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:minWidth="48dp"
+            android:minHeight="48dp"
+            android:layout_marginStart="8dp"
+            android:src="@drawable/ic_paste"
+            android:contentDescription="@string/undo"
+            android:background="?attr/selectableItemBackgroundBorderless" />
+
+        <ImageButton
+            android:id="@+id/btn_undo"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:minWidth="48dp"
+            android:minHeight="48dp"
+            android:layout_marginStart="8dp"
+            android:src="@drawable/ic_undo"
+            android:contentDescription="@string/undo"
+            android:background="?attr/selectableItemBackgroundBorderless" />
+
+        <ImageButton
+            android:id="@+id/btn_redo"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:minWidth="48dp"
+            android:minHeight="48dp"
+            android:layout_marginStart="8dp"
+            android:src="@drawable/ic_redo"
+            android:contentDescription="@string/redo"
+            android:background="?attr/selectableItemBackgroundBorderless" />
+
+        <ImageButton
+            android:id="@+id/btn_find"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:minWidth="48dp"
+            android:minHeight="48dp"
+            android:layout_marginStart="8dp"
+            android:src="@drawable/ic_find"
+            android:contentDescription="@string/findreplace"
+            android:background="?attr/selectableItemBackgroundBorderless" />
+    </LinearLayout>
+
+    <!-- Word/Character Count -->
+    <TextView
+        android:id="@+id/wordCountText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="8dp"
+        android:text="@string/words_0_characters_0"
+        android:textAlignment="center"
+        android:textColor="#FF444444" />
+
+</LinearLayout>

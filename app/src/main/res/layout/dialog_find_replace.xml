@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:padding="16dp"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <EditText
+        android:id="@+id/et_find"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Find"
+        android:minHeight="48dp" />
+
+    <EditText
+        android:id="@+id/et_replace"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:hint="Replace with"
+        android:minHeight="48dp" />
+
+    <CheckBox
+        android:id="@+id/cb_case_sensitive"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Case Sensitive"
+        android:layout_marginTop="8dp" />
+
+    <CheckBox
+        android:id="@+id/cb_whole_word"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Whole Word"
+        android:layout_marginTop="4dp" />
+
+</LinearLayout>
