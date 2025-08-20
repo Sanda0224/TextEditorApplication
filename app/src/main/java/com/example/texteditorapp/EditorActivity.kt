@@ -23,6 +23,8 @@ class EditorActivity : AppCompatActivity() {
     private lateinit var wordCountText: TextView
     private lateinit var undoRedoManager: UndoRedoManager
 
+    private lateinit var kotlinHighlighter: KotlinHighlighter
+
     private val OPEN_FILE_REQUEST_CODE = 101
     private val SAVE_FILE_REQUEST_CODE = 102
 
@@ -36,11 +38,20 @@ class EditorActivity : AppCompatActivity() {
         editor = findViewById(R.id.code_editor)
         wordCountText = findViewById(R.id.wordCountText)
 
+        kotlinHighlighter = KotlinHighlighter(editor)
+        kotlinHighlighter.start()
+
         // Create undo/redo manager and attach to editText
         undoRedoManager = UndoRedoManager(editor)
 
         setupWordCountUpdater()
         setupButtons()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        // optional, cleanup
+        kotlinHighlighter.stop()
     }
 
     private fun setupWordCountUpdater() {

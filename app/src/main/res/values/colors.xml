@@ -2,4 +2,11 @@
 <resources>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+    <color name="code_keyword">#2962FF</color>
+    <color name="code_string">#43A047</color>
+    <color name="code_comment">#9E9E9E</color>
+    <color name="code_number">#D32F2F</color>
+    <color name="code_type">#7B1FA2</color>
+    <color name="code_function">#00838F</color>
+    <color name="code_annotation">#BF360C</color>
 </resources>
