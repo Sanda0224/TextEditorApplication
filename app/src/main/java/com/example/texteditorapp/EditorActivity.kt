@@ -16,6 +16,7 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import java.nio.charset.Charset
 
 class EditorActivity : AppCompatActivity() {
 
@@ -23,10 +24,12 @@ class EditorActivity : AppCompatActivity() {
     private lateinit var wordCountText: TextView
     private lateinit var undoRedoManager: UndoRedoManager
 
-    private lateinit var kotlinHighlighter: KotlinHighlighter
+    private var kotlinHighlighter: KotlinHighlighter? = null
+    private var configHighlighter: ConfigurableHighlighter? = null
 
     private val OPEN_FILE_REQUEST_CODE = 101
     private val SAVE_FILE_REQUEST_CODE = 102
+    private val PICK_CONFIG_REQUEST = 201
 
     private var currentFileUri: Uri? = null
     private var currentFileName: String = "untitled.txt"
@@ -38,10 +41,11 @@ class EditorActivity : AppCompatActivity() {
         editor = findViewById(R.id.code_editor)
         wordCountText = findViewById(R.id.wordCountText)
 
+        // Initialize Kotlin highlighting
         kotlinHighlighter = KotlinHighlighter(editor)
-        kotlinHighlighter.start()
+        kotlinHighlighter?.attach()
 
-        // Create undo/redo manager and attach to editText
+        // Initialize undo/redo
         undoRedoManager = UndoRedoManager(editor)
 
         setupWordCountUpdater()
@@ -50,15 +54,14 @@ class EditorActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
-        // optional, cleanup
-        kotlinHighlighter.stop()
+        kotlinHighlighter?.detach()
+        configHighlighter?.detach()
     }
 
     private fun setupWordCountUpdater() {
-        // Keep word/char count updated
         editor.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {
-                // Undo/Redo manager handles history internally, nothing needed here
+                // UndoRedoManager handles internally
             }
 
             override fun afterTextChanged(s: Editable?) {
@@ -92,6 +95,11 @@ class EditorActivity : AppCompatActivity() {
 
         findViewById<ImageButton>(R.id.btn_compile).setOnClickListener {
             compileCode()
+        }
+
+        findViewById<ImageButton>(R.id.btn_compile).setOnLongClickListener {
+            showLanguageChooser()
+            true
         }
 
         findViewById<ImageButton>(R.id.btn_cut).setOnClickListener {
@@ -144,7 +152,7 @@ class EditorActivity : AppCompatActivity() {
         clipboard.setPrimaryClip(clip)
     }
 
-    // ---------------------- SAF open/save ----------------------
+    // ---------------- File Open / Save ----------------
 
     private fun openFilePicker() {
         val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
@@ -165,8 +173,8 @@ class EditorActivity : AppCompatActivity() {
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
-
         if (resultCode != Activity.RESULT_OK || data?.data == null) return
+
         val uri = data.data!!
 
         when (requestCode) {
@@ -174,15 +182,27 @@ class EditorActivity : AppCompatActivity() {
                 currentFileUri = uri
                 readTextFromUri(uri)
                 currentFileName = getFileNameFromUri(uri) ?: "untitled.txt"
-                undoRedoManager.clearHistory() // reset history after loading file
+                undoRedoManager.clearHistory()
                 Toast.makeText(this, "Opened: $currentFileName", Toast.LENGTH_SHORT).show()
             }
             SAVE_FILE_REQUEST_CODE -> {
                 currentFileUri = uri
                 writeTextToUri(uri, editor.text.toString())
-                // Update filename from URI if available
                 currentFileName = getFileNameFromUri(uri) ?: currentFileName
                 Toast.makeText(this, "Saved as $currentFileName", Toast.LENGTH_SHORT).show()
+            }
+            PICK_CONFIG_REQUEST -> {
+                try {
+                    val json = contentResolver.openInputStream(uri)?.use { it.readBytes().toString(Charset.forName("UTF-8")) }
+                    if (json != null) {
+                        val cfg = ConfigurableHighlighter.fromJson(json)
+                        applyConfigHighlighting(cfg)
+                    } else {
+                        Toast.makeText(this, "Empty config file", Toast.LENGTH_SHORT).show()
+                    }
+                } catch (e: Exception) {
+                    Toast.makeText(this, "Config load error: ${e.message}", Toast.LENGTH_LONG).show()
+                }
             }
         }
     }
@@ -211,7 +231,7 @@ class EditorActivity : AppCompatActivity() {
         return name
     }
 
-    // ---------------------- Compile stub ----------------------
+    // ---------------- Compile ----------------
 
     private fun compileCode() {
         AlertDialog.Builder(this)
@@ -221,36 +241,31 @@ class EditorActivity : AppCompatActivity() {
             .show()
     }
 
-    // ---------------------- Find & Replace ----------------------
+    // ---------------- Find & Replace ----------------
 
     private fun showFindReplaceDialog() {
         val dialogView = layoutInflater.inflate(R.layout.dialog_find_replace, null)
         val etFind = dialogView.findViewById<EditText>(R.id.et_find)
         val etReplace = dialogView.findViewById<EditText>(R.id.et_replace)
-        val cbCaseSensitive =
-            dialogView.findViewById<android.widget.CheckBox>(R.id.cb_case_sensitive)
+        val cbCaseSensitive = dialogView.findViewById<android.widget.CheckBox>(R.id.cb_case_sensitive)
         val cbWholeWord = dialogView.findViewById<android.widget.CheckBox>(R.id.cb_whole_word)
 
         AlertDialog.Builder(this)
             .setTitle("Find and Replace")
             .setView(dialogView)
             .setPositiveButton("Replace All") { _, _ ->
-                val findText = etFind.text.toString()
-                val replaceText = etReplace.text.toString()
-                val caseSensitive = cbCaseSensitive.isChecked
-                val wholeWord = cbWholeWord.isChecked
-                performFindReplace(findText, replaceText, caseSensitive, wholeWord)
+                performFindReplace(
+                    etFind.text.toString(),
+                    etReplace.text.toString(),
+                    cbCaseSensitive.isChecked,
+                    cbWholeWord.isChecked
+                )
             }
             .setNegativeButton("Cancel", null)
             .show()
     }
 
-    private fun performFindReplace(
-        findText: String,
-        replaceText: String,
-        caseSensitive: Boolean,
-        wholeWord: Boolean
-    ) {
+    private fun performFindReplace(findText: String, replaceText: String, caseSensitive: Boolean, wholeWord: Boolean) {
         val content = editor.text.toString()
         if (findText.isEmpty()) return
 
@@ -261,5 +276,57 @@ class EditorActivity : AppCompatActivity() {
         val newText = regex.replace(content, replaceText)
         editor.setText(newText)
         Toast.makeText(this, "Replaced all occurrences", Toast.LENGTH_SHORT).show()
+    }
+
+    // ---------------- Language / Config ----------------
+
+    private fun showLanguageChooser() {
+        val items = arrayOf("Kotlin (built-in)", "Java (asset)", "Python (asset)", "Load JSON…")
+        AlertDialog.Builder(this)
+            .setTitle("Syntax Highlighting")
+            .setItems(items) { _, which ->
+                when (which) {
+                    0 -> applyKotlinHighlighting()
+                    1 -> loadAssetConfig("languages/java.json")
+                    2 -> loadAssetConfig("languages/python.json")
+                    3 -> pickConfigJson()
+                }
+            }
+            .show()
+    }
+
+    private fun applyKotlinHighlighting() {
+        configHighlighter?.detach()
+        configHighlighter = null
+        if (kotlinHighlighter == null) kotlinHighlighter = KotlinHighlighter(editor)
+        kotlinHighlighter?.attach()
+        Toast.makeText(this, "Kotlin highlighting enabled", Toast.LENGTH_SHORT).show()
+    }
+
+    private fun applyConfigHighlighting(config: LanguageConfig) {
+        kotlinHighlighter?.detach()
+        kotlinHighlighter = null
+        configHighlighter?.detach()
+        configHighlighter = ConfigurableHighlighter(editor, config)
+        configHighlighter?.attach()
+        Toast.makeText(this, "Loaded language: ${config.name}", Toast.LENGTH_SHORT).show()
+    }
+
+    private fun loadAssetConfig(path: String) {
+        try {
+            val json = assets.open(path).use { it.readBytes().toString(Charset.forName("UTF-8")) }
+            val config = ConfigurableHighlighter.fromJson(json)
+            applyConfigHighlighting(config)
+        } catch (e: Exception) {
+            Toast.makeText(this, "Failed to load asset: ${e.message}", Toast.LENGTH_LONG).show()
+        }
+    }
+
+    private fun pickConfigJson() {
+        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+            addCategory(Intent.CATEGORY_OPENABLE)
+            type = "application/json"
+        }
+        startActivityForResult(intent, PICK_CONFIG_REQUEST)
     }
 }

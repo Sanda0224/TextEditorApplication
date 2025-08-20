@@ -1,5 +1,6 @@
 package com.example.texteditorapp
 
+import android.graphics.Color
 import android.os.Handler
 import android.os.Looper
 import android.text.Editable
@@ -7,81 +8,63 @@ import android.text.Spannable
 import android.text.TextWatcher
 import android.text.style.ForegroundColorSpan
 import android.widget.EditText
-import androidx.core.content.ContextCompat
 import java.util.regex.Pattern
 
 /**
- * Lightweight Kotlin syntax highlighter for EditText (no libraries).
- * Applies color spans with a small debounce for performance.
+ * Lightweight Kotlin syntax highlighter for an EditText.
+ * No text replacement, spans only, debounced for performance.
  */
 class KotlinHighlighter(
     private val editText: EditText,
-    private val config: Config = Config.from(editText)
+    keywordColorHex: String = "#1565C0",   // blue
+    stringColorHex: String = "#2E7D32",    // green
+    numberColorHex: String = "#D32F2F",    // red
+    commentColorHex: String = "#9E9E9E",   // gray
+    fnColorHex: String = "#8E24AA"         // purple
 ) {
 
-    data class Config(
-        val keywordColor: Int,
-        val stringColor: Int,
-        val commentColor: Int,
-        val numberColor: Int,
-        val typeColor: Int,
-        val functionColor: Int,
-        val annotationColor: Int,
-        val delayMs: Long = 120L
-    ) {
-        companion object {
-            fun from(view: EditText) = Config(
-                keywordColor = ContextCompat.getColor(view.context, R.color.code_keyword),
-                stringColor = ContextCompat.getColor(view.context, R.color.code_string),
-                commentColor = ContextCompat.getColor(view.context, R.color.code_comment),
-                numberColor = ContextCompat.getColor(view.context, R.color.code_number),
-                typeColor = ContextCompat.getColor(view.context, R.color.code_type),
-                functionColor = ContextCompat.getColor(view.context, R.color.code_function),
-                annotationColor = ContextCompat.getColor(view.context, R.color.code_annotation)
-            )
-        }
-    }
+    private val keywordColor = Color.parseColor(keywordColorHex)
+    private val stringColor = Color.parseColor(stringColorHex)
+    private val numberColor = Color.parseColor(numberColorHex)
+    private val commentColor = Color.parseColor(commentColorHex)
+    private val fnColor = Color.parseColor(fnColorHex)
 
+    // --- Patterns ---
+    private val KEYWORDS = listOf(
+        "as","break","class","continue","do","else","false","for","fun","if","in","interface",
+        "is","null","object","package","return","super","this","throw","true","try","typealias",
+        "typeof","val","var","when","while","by","catch","constructor","delegate","dynamic",
+        "field","file","finally","get","import","init","param","private","public","protected",
+        "set","setparam","where","actual","abstract","annotation","companion","const","crossinline",
+        "data","enum","expect","external","final","infix","inline","inner","internal","lateinit",
+        "noinline","open","operator","out","override","reified","sealed","suspend","tailrec","vararg"
+    )
+
+    private val KEYWORD_PATTERN = Pattern.compile(
+        "\\b(?:${KEYWORDS.joinToString("|") { Pattern.quote(it) }})\\b"
+    )
+
+    // Strings: "..." and '...' with escapes; triple-quoted strings """..."""
+    private val STRING_PATTERN = Pattern.compile(
+        // triple quoted OR normal double OR single
+        "(\"\"\"[\\s\\S]*?\"\"\"|\"(?:\\\\.|[^\"\\\\])*\"|'(?:\\\\.|[^'\\\\])*)"
+    )
+
+    // Line & block comments
+    private val LINE_COMMENT_PATTERN = Pattern.compile("//.*?$", Pattern.MULTILINE)
+    private val BLOCK_COMMENT_PATTERN = Pattern.compile("/\\*[\\s\\S]*?\\*/")
+
+    // Numbers (decimal, hex, underscores)
+    private val NUMBER_PATTERN = Pattern.compile(
+        "\\b(0[xX][0-9A-Fa-f_]+|\\d[\\d_]*(?:\\.\\d[\\d_]*)?(?:[eE][+-]?\\d+)?)\\b"
+    )
+
+    // Function names after `fun`
+    private val FUN_NAME_PATTERN = Pattern.compile("\\bfun\\s+([A-Za-z_]\\w*)")
+
+    // Debounce to avoid re-highlighting every keystroke
     private val handler = Handler(Looper.getMainLooper())
-    private var isHighlighting = false
-
-    // Compile patterns once
-    private object P {
-        // Strings
-        val TRIPLE_STRING: Pattern =
-            Pattern.compile("\"\"\"[\\s\\S]*?\"\"\"", Pattern.MULTILINE)
-        val STRING: Pattern =
-            Pattern.compile("\"([^\"\\\\]|\\\\.)*\"")
-
-        // Comments
-        val LINE_COMMENT: Pattern =
-            Pattern.compile("//.*", Pattern.MULTILINE)
-        val BLOCK_COMMENT: Pattern =
-            Pattern.compile("/\\*[\\s\\S]*?\\*/")
-
-        // Annotations
-        val ANNOTATION: Pattern =
-            Pattern.compile("@[A-Za-z_]\\w*")
-
-        // Numbers (supports underscores and decimals/exponents)
-        val NUMBER: Pattern =
-            Pattern.compile("\\b\\d+(?:_\\d+)*(?:\\.\\d+(?:_\\d+)*)?(?:[eE][+-]?\\d+)?[fFdDlL]?\\b")
-
-        // Kotlin keywords
-        private const val KW = "(abstract|annotation|as|break|by|catch|class|companion|const|constructor|continue|" +
-                "crossinline|data|do|else|enum|expect|external|false|final|finally|for|fun|get|if|import|in|infix|" +
-                "init|inline|inner|interface|internal|is|it|lateinit|noinline|null|object|open|operator|out|override|" +
-                "package|private|protected|public|reified|return|sealed|set|super|suspend|tailrec|this|throw|true|try|" +
-                "typealias|val|var|when|where|while)"
-        val KEYWORDS: Pattern = Pattern.compile("\\b$KW\\b")
-
-        // Common types (you can expand)
-        val TYPES: Pattern = Pattern.compile(
-            "\\b(Boolean|Byte|Short|Int|Long|Float|Double|Char|String|Unit|Any|Nothing|Array|List|MutableList|Set|MutableSet|Map|MutableMap)\\b"
-        )
-
-        // Function names right after `fun `
-        val FUN_NAME: Pattern = Pattern.compile("\\bfun\\s+([A-Za-z_]\\w*)")    }
+    private val highlightRunnable = Runnable { applyHighlighting() }
 
     private val watcher = object : TextWatcher {
         override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
@@ -91,60 +74,65 @@ class KotlinHighlighter(
         override fun afterTextChanged(s: Editable?) {}
     }
 
-    fun start() {
+    fun attach() {
         editText.addTextChangedListener(watcher)
         schedule()
     }
 
-    fun stop() {
+    fun detach() {
         editText.removeTextChangedListener(watcher)
-        handler.removeCallbacksAndMessages(null)
+        handler.removeCallbacks(highlightRunnable)
+        clearAllSpans()
     }
 
     private fun schedule() {
-        handler.removeCallbacksAndMessages(null)
-        handler.postDelayed({ highlightNow() }, config.delayMs)
+        handler.removeCallbacks(highlightRunnable)
+        handler.postDelayed(highlightRunnable, 120)
     }
 
-    private fun highlightNow() {
-        if (isHighlighting) return
-        val editable = editText.editableText ?: return
-        isHighlighting = true
-        try {
-            // 1) clear previous ForegroundColorSpans
-            val spans = editable.getSpans(0, editable.length, ForegroundColorSpan::class.java)
-            for (span in spans) editable.removeSpan(span)
-
-            // 2) apply spans in priority order (later ones override visually)
-            colorMatches(editable, P.KEYWORDS, config.keywordColor)
-            colorMatches(editable, P.TYPES, config.typeColor)
-            colorMatches(editable, P.NUMBER, config.numberColor)
-            colorMatches(editable, P.ANNOTATION, config.annotationColor)
-            colorMatches(editable, P.FUN_NAME, config.functionColor)
-
-            // Strings & comments last so they override any inner matches
-            colorMatches(editable, P.TRIPLE_STRING, config.stringColor)
-            colorMatches(editable, P.STRING, config.stringColor)
-            colorMatches(editable, P.BLOCK_COMMENT, config.commentColor)
-            colorMatches(editable, P.LINE_COMMENT, config.commentColor)
-        } finally {
-            isHighlighting = false
+    private fun clearAllSpans() {
+        val text = editText.text
+        val spans = text.getSpans(0, text.length, ForegroundColorSpan::class.java)
+        for (sp in spans) {
+            text.removeSpan(sp)
         }
     }
 
-    private fun colorMatches(
-        text: Editable,
-        pattern: Pattern,
-        color: Int
-    ) {
+    private fun colorize(pattern: Pattern, color: Int, groupIndex: Int = 0) {
+        val text = editText.text
         val matcher = pattern.matcher(text)
         while (matcher.find()) {
-            text.setSpan(
-                ForegroundColorSpan(color),
-                matcher.start(),
-                matcher.end(),
-                Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
-            )
+            val start = matcher.start(if (groupIndex == 0) 0 else groupIndex)
+            val end = matcher.end(if (groupIndex == 0) 0 else groupIndex)
+            if (start in 0..end && end <= text.length) {
+                text.setSpan(
+                    ForegroundColorSpan(color),
+                    start,
+                    end,
+                    Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
+                )
+            }
+        }
+    }
+
+    private fun applyHighlighting() {
+        // Preserve cursor/selection
+        val selStart = editText.selectionStart
+        val selEnd = editText.selectionEnd
+
+        clearAllSpans()
+
+        colorize(BLOCK_COMMENT_PATTERN, commentColor)
+        colorize(LINE_COMMENT_PATTERN, commentColor)
+        colorize(STRING_PATTERN, stringColor)
+        colorize(NUMBER_PATTERN, numberColor)
+        colorize(KEYWORD_PATTERN, keywordColor)
+        // Function name is group(1)
+        colorize(FUN_NAME_PATTERN, fnColor, groupIndex = 1)
+
+        // Restore selection
+        if (selStart >= 0 && selEnd >= 0 && selStart <= editText.length() && selEnd <= editText.length()) {
+            editText.setSelection(selStart, selEnd)
         }
     }
 }
