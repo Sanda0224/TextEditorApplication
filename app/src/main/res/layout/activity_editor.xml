@@ -173,6 +173,7 @@
         android:padding="8dp"
         android:text="@string/words_0_characters_0"
         android:textAlignment="center"
-        android:textColor="#FF444444" />
+        android:textColor="#FF444444"
+        android:background="#FFFAFAFA"/>
 
 </LinearLayout>

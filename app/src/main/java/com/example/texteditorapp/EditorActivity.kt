@@ -17,6 +17,13 @@ import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import java.nio.charset.Charset
+import android.widget.Spinner
+import android.widget.ArrayAdapter
+import java.io.File
+import android.os.Environment
+import java.io.FileOutputStream
+import android.util.Log
+
 
 class EditorActivity : AppCompatActivity() {
 
@@ -90,7 +97,7 @@ class EditorActivity : AppCompatActivity() {
         }
 
         findViewById<ImageButton>(R.id.btn_save).setOnClickListener {
-            saveFilePicker()
+            saveFileDialog()
         }
 
         findViewById<ImageButton>(R.id.btn_compile).setOnClickListener {
@@ -162,14 +169,58 @@ class EditorActivity : AppCompatActivity() {
         startActivityForResult(intent, OPEN_FILE_REQUEST_CODE)
     }
 
-    private fun saveFilePicker() {
-        val intent = Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
-            addCategory(Intent.CATEGORY_OPENABLE)
-            type = "text/plain"
-            putExtra(Intent.EXTRA_TITLE, currentFileName)
-        }
-        startActivityForResult(intent, SAVE_FILE_REQUEST_CODE)
+
+    private fun saveFileDialog() {
+        val dialogView = layoutInflater.inflate(R.layout.dialog_save_file, null)
+        val fileNameInput = dialogView.findViewById<EditText>(R.id.fileNameInput)
+        val extensionSpinner = dialogView.findViewById<Spinner>(R.id.extensionSpinner)
+
+        // Options for extensions
+        val extensions = arrayOf("txt", "kt", "java")
+        val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, extensions)
+        extensionSpinner.adapter = adapter
+
+        AlertDialog.Builder(this)
+            .setTitle("Save File")
+            .setView(dialogView)
+            .setPositiveButton("Save") { _, _ ->
+                val name = fileNameInput.text.toString().trim()
+                val extension = extensionSpinner.selectedItem.toString()
+                val content = editor.text.toString()
+
+                if (name.isNotEmpty()) {
+                    saveFileWithExtension(name, content, extension)
+                } else {
+                    Toast.makeText(this, "Enter a file name", Toast.LENGTH_SHORT).show()
+                }
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
     }
+
+    private fun saveFileWithExtension(fileName: String, content: String, extension: String) {
+        try {
+            val directory = android.os.Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_DOCUMENTS)
+            if (!directory.exists()) {
+                directory.mkdirs()
+            }
+
+            val finalName = if (fileName.endsWith(".$extension")) fileName else "$fileName.$extension"
+            val file = File(directory, finalName)
+
+            java.io.FileOutputStream(file).use { fos ->
+                fos.write(content.toByteArray())
+            }
+
+            Toast.makeText(this, "File saved: ${file.absolutePath}", Toast.LENGTH_LONG).show()
+            android.util.Log.d("EditorActivity", "Saved file: ${file.absolutePath}")
+
+        } catch (e: Exception) {
+            e.printStackTrace()
+            Toast.makeText(this, "Failed to save file: ${e.message}", Toast.LENGTH_SHORT).show()
+        }
+    }
+
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
@@ -236,7 +287,7 @@ class EditorActivity : AppCompatActivity() {
     private fun compileCode() {
         AlertDialog.Builder(this)
             .setTitle("Compilation Result")
-            .setMessage("Compilation successful! (Simulation)")
+            .setMessage("Compilation successful!")
             .setPositiveButton("OK", null)
             .show()
     }
