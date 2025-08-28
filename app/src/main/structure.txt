@@ -1,0 +1,80 @@
+Folder PATH listing for volume Windows
+Volume serial number is 1661-5C5C
+C:.
+¦   AndroidManifest.xml
+¦   structure.txt
+¦   
++---assets
+¦   +---languages
+¦           java.json
+¦           python.json
+¦           
++---java
+¦   +---com
+¦       +---example
+¦           +---texteditorapp
+¦                   ConfigurableHighlighter.kt
+¦                   EditorActivity.kt
+¦                   KotlinHighlighter.kt
+¦                   MainActivity.kt
+¦                   UndoRedoManager.kt
+¦                   
++---res
+    +---drawable
+    ¦       ic_compile.png
+    ¦       ic_copy.png
+    ¦       ic_cut.png
+    ¦       ic_find.png
+    ¦       ic_launcher_background.xml
+    ¦       ic_launcher_foreground.xml
+    ¦       ic_logo.png
+    ¦       ic_new.png
+    ¦       ic_open.png
+    ¦       ic_paste.png
+    ¦       ic_redo.png
+    ¦       ic_save.png
+    ¦       ic_undo.png
+    ¦       img.png
+    ¦       
+    +---layout
+    ¦       activity_editor.xml
+    ¦       activity_main.xml
+    ¦       dialog_find_replace.xml
+    ¦       dialog_save_file.xml
+    ¦       
+    +---mipmap-anydpi-v26
+    ¦       ic_launcher.xml
+    ¦       ic_launcher_round.xml
+    ¦       
+    +---mipmap-hdpi
+    ¦       ic_launcher.webp
+    ¦       ic_launcher_round.webp
+    ¦       
+    +---mipmap-mdpi
+    ¦       ic_launcher.webp
+    ¦       ic_launcher_round.webp
+    ¦       
+    +---mipmap-xhdpi
+    ¦       ic_launcher.webp
+    ¦       ic_launcher_round.webp
+    ¦       
+    +---mipmap-xxhdpi
+    ¦       ic_launcher.webp
+    ¦       ic_launcher_round.webp
+    ¦       
+    +---mipmap-xxxhdpi
+    ¦       ic_launcher.webp
+    ¦       ic_launcher_round.webp
+    ¦       
+    +---values
+    ¦       colors.xml
+    ¦       strings.xml
+    ¦       themes.xml
+    ¦       
+    +---values-night
+    ¦       themes.xml
+    ¦       
+    +---xml
+            backup_rules.xml
+            data_extraction_rules.xml
+            
