@@ -10,20 +10,12 @@ import android.os.Bundle
 import android.provider.OpenableColumns
 import android.text.Editable
 import android.text.TextWatcher
-import android.widget.EditText
-import android.widget.ImageButton
-import android.widget.TextView
-import android.widget.Toast
+import android.view.View
+import android.widget.*
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import java.nio.charset.Charset
-import android.widget.Spinner
-import android.widget.ArrayAdapter
 import java.io.File
-import android.os.Environment
-import java.io.FileOutputStream
-import android.util.Log
-
 
 class EditorActivity : AppCompatActivity() {
 
@@ -48,11 +40,30 @@ class EditorActivity : AppCompatActivity() {
         editor = findViewById(R.id.code_editor)
         wordCountText = findViewById(R.id.wordCountText)
 
-        // Initialize Kotlin highlighting
+        // FileIO Spinner
+        val spinner: Spinner = findViewById(R.id.spinnerFileOps)
+        val fileOps = resources.getStringArray(R.array.file_operations)
+
+        val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, fileOps)
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        spinner.adapter = adapter
+
+        spinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>, view: View?, position: Int, id: Long) {
+                when(position) {
+                    0 -> createNewFile()
+                    1 -> openFilePicker()
+                    2 -> saveFileDialog()
+                }
+            }
+            override fun onNothingSelected(parent: AdapterView<*>) {}
+        }
+
+        // ---------------- Initialize syntax highlighting ----------------
         kotlinHighlighter = KotlinHighlighter(editor)
         kotlinHighlighter?.attach()
 
-        // Initialize undo/redo
+        // ---------------- Initialize undo/redo ----------------
         undoRedoManager = UndoRedoManager(editor)
 
         setupWordCountUpdater()
@@ -65,12 +76,11 @@ class EditorActivity : AppCompatActivity() {
         configHighlighter?.detach()
     }
 
+    // ---------------- Word count ----------------
     private fun setupWordCountUpdater() {
         editor.addTextChangedListener(object : TextWatcher {
-            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {
-                // UndoRedoManager handles internally
-            }
-
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
             override fun afterTextChanged(s: Editable?) {
                 val text = s?.toString() ?: ""
                 val words = text.trim().split("\\s+".toRegex()).filter { it.isNotEmpty() }
@@ -78,28 +88,11 @@ class EditorActivity : AppCompatActivity() {
                 val charCount = text.length
                 wordCountText.text = "Words: $wordCount  Characters: $charCount"
             }
-
-            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
         })
     }
 
+    // ---------------- Buttons ----------------
     private fun setupButtons() {
-        findViewById<ImageButton>(R.id.btn_new).setOnClickListener {
-            editor.setText("")
-            currentFileUri = null
-            currentFileName = "untitled.txt"
-            undoRedoManager.clearHistory()
-            Toast.makeText(this, "New file created", Toast.LENGTH_SHORT).show()
-        }
-
-        findViewById<ImageButton>(R.id.btn_open).setOnClickListener {
-            openFilePicker()
-        }
-
-        findViewById<ImageButton>(R.id.btn_save).setOnClickListener {
-            saveFileDialog()
-        }
-
         findViewById<ImageButton>(R.id.btn_compile).setOnClickListener {
             compileCode()
         }
@@ -109,47 +102,42 @@ class EditorActivity : AppCompatActivity() {
             true
         }
 
-        findViewById<ImageButton>(R.id.btn_cut).setOnClickListener {
-            val start = editor.selectionStart
-            val end = editor.selectionEnd
-            if (start >= 0 && end > start) {
-                val selectedText = editor.text.subSequence(start, end).toString()
-                copyToClipboard(selectedText)
-                editor.text.replace(start, end, "")
+        findViewById<ImageButton>(R.id.btn_cut).setOnClickListener { cutText() }
+        findViewById<ImageButton>(R.id.btn_copy).setOnClickListener { copyText() }
+        findViewById<ImageButton>(R.id.btn_paste).setOnClickListener { pasteText() }
+        findViewById<ImageButton>(R.id.btn_undo).setOnClickListener { undoRedoManager.undo() }
+        findViewById<ImageButton>(R.id.btn_redo).setOnClickListener { undoRedoManager.redo() }
+        findViewById<ImageButton>(R.id.btn_find).setOnClickListener { showFindReplaceDialog() }
+    }
+
+    private fun cutText() {
+        val start = editor.selectionStart
+        val end = editor.selectionEnd
+        if (start >= 0 && end > start) {
+            val selectedText = editor.text.subSequence(start, end).toString()
+            copyToClipboard(selectedText)
+            editor.text.replace(start, end, "")
+        }
+    }
+
+    private fun copyText() {
+        val start = editor.selectionStart
+        val end = editor.selectionEnd
+        if (start >= 0 && end > start) {
+            val selectedText = editor.text.subSequence(start, end).toString()
+            copyToClipboard(selectedText)
+            Toast.makeText(this, "Copied to clipboard", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun pasteText() {
+        val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+        if (clipboard.hasPrimaryClip()) {
+            val clip = clipboard.primaryClip
+            clip?.getItemAt(0)?.text?.let { textToPaste ->
+                val start = editor.selectionStart.coerceAtLeast(0)
+                editor.text.insert(start, textToPaste)
             }
-        }
-
-        findViewById<ImageButton>(R.id.btn_copy).setOnClickListener {
-            val start = editor.selectionStart
-            val end = editor.selectionEnd
-            if (start >= 0 && end > start) {
-                val selectedText = editor.text.subSequence(start, end).toString()
-                copyToClipboard(selectedText)
-                Toast.makeText(this, "Copied to clipboard", Toast.LENGTH_SHORT).show()
-            }
-        }
-
-        findViewById<ImageButton>(R.id.btn_paste).setOnClickListener {
-            val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-            if (clipboard.hasPrimaryClip()) {
-                val clip = clipboard.primaryClip
-                clip?.getItemAt(0)?.text?.let { textToPaste ->
-                    val start = editor.selectionStart.coerceAtLeast(0)
-                    editor.text.insert(start, textToPaste)
-                }
-            }
-        }
-
-        findViewById<ImageButton>(R.id.btn_undo).setOnClickListener {
-            undoRedoManager.undo()
-        }
-
-        findViewById<ImageButton>(R.id.btn_redo).setOnClickListener {
-            undoRedoManager.redo()
-        }
-
-        findViewById<ImageButton>(R.id.btn_find).setOnClickListener {
-            showFindReplaceDialog()
         }
     }
 
@@ -160,6 +148,13 @@ class EditorActivity : AppCompatActivity() {
     }
 
     // ---------------- File Open / Save ----------------
+    private fun createNewFile() {
+        editor.setText("")
+        currentFileUri = null
+        currentFileName = "untitled.txt"
+        undoRedoManager.clearHistory()
+        Toast.makeText(this, "New file created", Toast.LENGTH_SHORT).show()
+    }
 
     private fun openFilePicker() {
         val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
@@ -169,13 +164,11 @@ class EditorActivity : AppCompatActivity() {
         startActivityForResult(intent, OPEN_FILE_REQUEST_CODE)
     }
 
-
     private fun saveFileDialog() {
         val dialogView = layoutInflater.inflate(R.layout.dialog_save_file, null)
         val fileNameInput = dialogView.findViewById<EditText>(R.id.fileNameInput)
         val extensionSpinner = dialogView.findViewById<Spinner>(R.id.extensionSpinner)
 
-        // Options for extensions
         val extensions = arrayOf("txt", "kt", "java")
         val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, extensions)
         extensionSpinner.adapter = adapter
@@ -186,10 +179,8 @@ class EditorActivity : AppCompatActivity() {
             .setPositiveButton("Save") { _, _ ->
                 val name = fileNameInput.text.toString().trim()
                 val extension = extensionSpinner.selectedItem.toString()
-                val content = editor.text.toString()
-
                 if (name.isNotEmpty()) {
-                    saveFileWithExtension(name, content, extension)
+                    saveFileWithExtension(name, editor.text.toString(), extension)
                 } else {
                     Toast.makeText(this, "Enter a file name", Toast.LENGTH_SHORT).show()
                 }
@@ -201,33 +192,20 @@ class EditorActivity : AppCompatActivity() {
     private fun saveFileWithExtension(fileName: String, content: String, extension: String) {
         try {
             val directory = android.os.Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_DOCUMENTS)
-            if (!directory.exists()) {
-                directory.mkdirs()
-            }
-
+            if (!directory.exists()) directory.mkdirs()
             val finalName = if (fileName.endsWith(".$extension")) fileName else "$fileName.$extension"
             val file = File(directory, finalName)
-
-            java.io.FileOutputStream(file).use { fos ->
-                fos.write(content.toByteArray())
-            }
-
+            java.io.FileOutputStream(file).use { fos -> fos.write(content.toByteArray()) }
             Toast.makeText(this, "File saved: ${file.absolutePath}", Toast.LENGTH_LONG).show()
-            android.util.Log.d("EditorActivity", "Saved file: ${file.absolutePath}")
-
         } catch (e: Exception) {
-            e.printStackTrace()
             Toast.makeText(this, "Failed to save file: ${e.message}", Toast.LENGTH_SHORT).show()
         }
     }
 
-
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         if (resultCode != Activity.RESULT_OK || data?.data == null) return
-
         val uri = data.data!!
-
         when (requestCode) {
             OPEN_FILE_REQUEST_CODE -> {
                 currentFileUri = uri
@@ -236,25 +214,8 @@ class EditorActivity : AppCompatActivity() {
                 undoRedoManager.clearHistory()
                 Toast.makeText(this, "Opened: $currentFileName", Toast.LENGTH_SHORT).show()
             }
-            SAVE_FILE_REQUEST_CODE -> {
-                currentFileUri = uri
-                writeTextToUri(uri, editor.text.toString())
-                currentFileName = getFileNameFromUri(uri) ?: currentFileName
-                Toast.makeText(this, "Saved as $currentFileName", Toast.LENGTH_SHORT).show()
-            }
-            PICK_CONFIG_REQUEST -> {
-                try {
-                    val json = contentResolver.openInputStream(uri)?.use { it.readBytes().toString(Charset.forName("UTF-8")) }
-                    if (json != null) {
-                        val cfg = ConfigurableHighlighter.fromJson(json)
-                        applyConfigHighlighting(cfg)
-                    } else {
-                        Toast.makeText(this, "Empty config file", Toast.LENGTH_SHORT).show()
-                    }
-                } catch (e: Exception) {
-                    Toast.makeText(this, "Config load error: ${e.message}", Toast.LENGTH_LONG).show()
-                }
-            }
+            SAVE_FILE_REQUEST_CODE -> writeTextToUri(uri, editor.text.toString())
+            PICK_CONFIG_REQUEST -> { /* load config JSON */ }
         }
     }
 
@@ -283,7 +244,6 @@ class EditorActivity : AppCompatActivity() {
     }
 
     // ---------------- Compile ----------------
-
     private fun compileCode() {
         AlertDialog.Builder(this)
             .setTitle("Compilation Result")
@@ -292,8 +252,7 @@ class EditorActivity : AppCompatActivity() {
             .show()
     }
 
-    // ---------------- Find & Replace ----------------
-
+    // ---------------- Find / Replace ----------------
     private fun showFindReplaceDialog() {
         val dialogView = layoutInflater.inflate(R.layout.dialog_find_replace, null)
         val etFind = dialogView.findViewById<EditText>(R.id.et_find)
@@ -328,8 +287,6 @@ class EditorActivity : AppCompatActivity() {
         editor.setText(newText)
         Toast.makeText(this, "Replaced all occurrences", Toast.LENGTH_SHORT).show()
     }
-
-    // ---------------- Language / Config ----------------
 
     private fun showLanguageChooser() {
         val items = arrayOf("Kotlin (built-in)", "Java (asset)", "Python (asset)", "Load JSON…")

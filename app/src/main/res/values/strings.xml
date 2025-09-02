@@ -9,4 +9,10 @@
     <string name="words_0_characters_0">Words: 0 | Characters: 0</string>
     <string name="app_logo">App Logo</string>
     <string name="name">Text Editor App</string>
+
+    <string-array name="file_operations">
+        <item>New File</item>
+        <item>Open File</item>
+        <item>Save File</item>
+    </string-array>
 </resources>

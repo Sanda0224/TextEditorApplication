@@ -21,44 +21,27 @@
     <LinearLayout
         android:id="@+id/fileOperationsBar"
         android:layout_width="match_parent"
-        android:layout_height="59dp"
-        android:layout_marginBottom="4dp"
-        android:background="#FFFAFAFA"
-        android:gravity="center"
-        android:orientation="horizontal">
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:padding="8dp"
+        android:background="#FFFAFAFA">
 
-        <ImageButton
-            android:id="@+id/btn_new"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="@string/new_file"
-            android:minWidth="48dp"
-            android:minHeight="48dp"
-            android:src="@drawable/ic_new" />
+        <!-- Dropdown for File Operations -->
+        <Spinner
+            android:id="@+id/spinnerFileOps"
+            android:layout_width="30dp"
+            android:layout_height="30dp"
+            android:spinnerMode="dropdown"
+            android:background="@drawable/ic_file"
+            android:padding="8dp"/>
 
-        <ImageButton
-            android:id="@+id/btn_open"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="@string/open_file"
-            android:minWidth="48dp"
-            android:minHeight="48dp"
-            android:src="@drawable/ic_open" />
+        <View
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_weight="1" />
 
-        <ImageButton
-            android:id="@+id/btn_save"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="@string/save_file"
-            android:minWidth="48dp"
-            android:minHeight="48dp"
-            android:src="@drawable/ic_save" />
-
+        <!-- Compile Button -->
         <ImageButton
             android:id="@+id/btn_compile"
             android:layout_width="wrap_content"
@@ -69,8 +52,12 @@
             android:minWidth="48dp"
             android:minHeight="48dp"
             android:src="@drawable/ic_compile" />
-
     </LinearLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="5dp"
+        android:background="#FF444444" />
 
     <EditText
         android:id="@+id/code_editor"
@@ -155,8 +142,8 @@
 
         <ImageButton
             android:id="@+id/btn_find"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
             android:minWidth="48dp"
             android:minHeight="48dp"
             android:layout_marginStart="8dp"
