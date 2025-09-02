@@ -1,6 +1,5 @@
 <resources>
-    <string name="app_name">Text Editor App</string>
-    <string name="codenest">CodeNest</string>
+    <string name="app_name">Code Wiz</string>
     <string name="new_file">New File</string>
     <string name="open_file">Open File</string>
     <string name="save_file">Save File</string>
@@ -9,5 +8,5 @@
     <string name="findreplace">FindReplace</string>
     <string name="words_0_characters_0">Words: 0 | Characters: 0</string>
     <string name="app_logo">App Logo</string>
-    <string name="name">CodeNest</string>
+    <string name="name">Text Editor App</string>
 </resources>

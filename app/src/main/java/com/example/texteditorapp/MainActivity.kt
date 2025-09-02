@@ -2,8 +2,9 @@ package com.example.texteditorapp
 
 import android.content.Intent
 import android.os.Bundle
-import android.view.View
 import androidx.appcompat.app.AppCompatActivity
+import android.os.Handler
+import android.os.Looper
 
 class MainActivity : AppCompatActivity() {
 
@@ -11,18 +12,16 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        // Make whole screen clickable to open EditorActivity
-        findViewById<View>(R.id.appLogo).setOnClickListener {
+        // Splash screen
+        Handler(Looper.getMainLooper()).postDelayed({
             openEditor()
-        }
-        findViewById<View>(R.id.appName).setOnClickListener {
-            openEditor()
-        }
+        }, 2000) // 2000 = 2 seconds delay
     }
 
     private fun openEditor() {
         val intent = Intent(this, EditorActivity::class.java)
         startActivity(intent)
+        finish()
     }
 }
 
