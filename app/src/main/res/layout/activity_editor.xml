@@ -54,6 +54,7 @@
             android:src="@drawable/ic_compile" />
     </LinearLayout>
 
+    <!-- Horizontal line separating top bar and edit screen -->
     <View
         android:layout_width="match_parent"
         android:layout_height="5dp"
@@ -107,7 +108,7 @@
         </LinearLayout>
     </HorizontalScrollView>
 
-    <!-- Button Toolbar with Icons and Spacing -->
+    <!-- Button Toolbar -->
     <LinearLayout
         android:id="@+id/editOperationsBar"
         android:layout_width="match_parent"
