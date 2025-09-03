@@ -40,6 +40,26 @@ class EditorActivity : AppCompatActivity() {
         editor = findViewById(R.id.code_editor)
         wordCountText = findViewById(R.id.wordCountText)
 
+        val lineNumbers = findViewById<TextView>(R.id.line_numbers)
+        val lineNumberScroll = findViewById<ScrollView>(R.id.line_number_scroll)
+
+        editor.addTextChangedListener(object : TextWatcher {
+            override fun afterTextChanged(s: Editable?) {
+                updateLineNumbers(lineNumbers, editor)
+            }
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+        })
+
+// Keep line numbers scroll synced with editor scroll
+        editor.setOnScrollChangeListener { _, _, scrollY, _, _ ->
+            lineNumberScroll.scrollTo(0, scrollY)
+        }
+
+// Initial setup
+        updateLineNumbers(lineNumbers, editor)
+
+
         // FileIO Spinner
         val spinner: Spinner = findViewById(R.id.spinnerFileOps)
         val fileOps = resources.getStringArray(R.array.file_operations)
@@ -59,11 +79,11 @@ class EditorActivity : AppCompatActivity() {
             override fun onNothingSelected(parent: AdapterView<*>) {}
         }
 
-        // ---------------- Initialize syntax highlighting ----------------
+        // Initialize syntax highlighting
         kotlinHighlighter = KotlinHighlighter(editor)
         kotlinHighlighter?.attach()
 
-        // ---------------- Initialize undo/redo ----------------
+        // Initialize undo/redo
         undoRedoManager = UndoRedoManager(editor)
 
         setupWordCountUpdater()
@@ -76,7 +96,7 @@ class EditorActivity : AppCompatActivity() {
         configHighlighter?.detach()
     }
 
-    // ---------------- Word count ----------------
+    // Word count
     private fun setupWordCountUpdater() {
         editor.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
@@ -91,7 +111,7 @@ class EditorActivity : AppCompatActivity() {
         })
     }
 
-    // ---------------- Buttons ----------------
+    // Buttons
     private fun setupButtons() {
         findViewById<ImageButton>(R.id.btn_compile).setOnClickListener {
             compileCode()
@@ -147,7 +167,7 @@ class EditorActivity : AppCompatActivity() {
         clipboard.setPrimaryClip(clip)
     }
 
-    // ---------------- File Open / Save ----------------
+    // File Open / Save
     private fun createNewFile() {
         editor.setText("")
         currentFileUri = null
@@ -243,7 +263,7 @@ class EditorActivity : AppCompatActivity() {
         return name
     }
 
-    // ---------------- Compile ----------------
+    // Compile
     private fun compileCode() {
         AlertDialog.Builder(this)
             .setTitle("Compilation Result")
@@ -252,7 +272,7 @@ class EditorActivity : AppCompatActivity() {
             .show()
     }
 
-    // ---------------- Find / Replace ----------------
+    // Find / Replace
     private fun showFindReplaceDialog() {
         val dialogView = layoutInflater.inflate(R.layout.dialog_find_replace, null)
         val etFind = dialogView.findViewById<EditText>(R.id.et_find)
@@ -337,4 +357,13 @@ class EditorActivity : AppCompatActivity() {
         }
         startActivityForResult(intent, PICK_CONFIG_REQUEST)
     }
+}
+
+private fun updateLineNumbers(lineNumbers: TextView, editor: EditText) {
+    val lineCount = editor.lineCount
+    val numbers = StringBuilder()
+    for (i in 1..lineCount) {
+        numbers.append(i).append("\n")
+    }
+    lineNumbers.text = numbers.toString()
 }

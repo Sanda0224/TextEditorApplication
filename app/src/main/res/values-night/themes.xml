@@ -2,6 +2,7 @@
     <!-- Base application theme. -->
     <style name="Base.Theme.TextEditorApp" parent="Theme.Material3.DayNight.NoActionBar">
         <!-- Customize your dark theme here. -->
+        <item name="android:statusBarColor">#000000</item>
         <!-- <item name="colorPrimary">@color/my_dark_primary</item> -->
     </style>
 </resources>
