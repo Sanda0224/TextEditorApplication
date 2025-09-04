@@ -5,6 +5,7 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Bundle
 import android.provider.OpenableColumns
@@ -32,6 +33,9 @@ class EditorActivity : AppCompatActivity() {
 
     private var currentFileUri: Uri? = null
     private var currentFileName: String = "untitled.txt"
+
+    private val STORAGE_PERMISSION_CODE = 200
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -120,6 +124,10 @@ class EditorActivity : AppCompatActivity() {
         findViewById<ImageButton>(R.id.btn_compile).setOnLongClickListener {
             showLanguageChooser()
             true
+        }
+
+        findViewById<ImageButton>(R.id.btn_check_compile).setOnClickListener {
+            checkCompileStatus()
         }
 
         findViewById<ImageButton>(R.id.btn_cut).setOnClickListener { cutText() }
@@ -265,12 +273,88 @@ class EditorActivity : AppCompatActivity() {
 
     // Compile
     private fun compileCode() {
-        AlertDialog.Builder(this)
-            .setTitle("Compilation Result")
-            .setMessage("Compilation successful!")
-            .setPositiveButton("OK", null)
-            .show()
+        try {
+            val code = editor.text.toString()
+
+            // Save to a Kotlin file in the Downloads folder
+            val directory = android.os.Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_DOWNLOADS)
+            if (!directory.exists()) directory.mkdirs()
+
+            val fileName = "TempProgram.kt"
+            val file = File(directory, fileName)
+
+            file.writeText(code)
+
+            AlertDialog.Builder(this)
+                .setTitle("Saved for ADB Compilation")
+                .setMessage("Code saved to:\n${file.absolutePath}\n\nYou can now use ADB to compile it.")
+                .setPositiveButton("OK", null)
+                .show()
+
+        } catch (e: Exception) {
+            Toast.makeText(this, "Error saving file: ${e.message}", Toast.LENGTH_LONG).show()
+        }
     }
+
+    private fun checkCompileStatus() {
+        if (!checkStoragePermission()) {
+            return // Permission will be requested; retry after grant
+        }
+
+        try {
+            val directory = android.os.Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_DOWNLOADS)
+            val resultFile = File(directory, "compile_result.txt")
+
+            if (!resultFile.exists()) {
+                AlertDialog.Builder(this)
+                    .setTitle("Compilation Result")
+                    .setMessage("No result found. Make sure you compiled the code from your PC and pushed the result.")
+                    .setPositiveButton("OK", null)
+                    .show()
+                return
+            }
+
+            val result = resultFile.readText()
+
+            AlertDialog.Builder(this)
+                .setTitle("Compilation Result")
+                .setMessage(result)
+                .setPositiveButton("OK", null)
+                .show()
+
+        } catch (e: Exception) {
+            AlertDialog.Builder(this)
+                .setTitle("Error")
+                .setMessage("Error reading compile result:\n${e.message}")
+                .setPositiveButton("OK", null)
+                .show()
+        }
+    }
+
+
+    private fun checkStoragePermission(): Boolean {
+        return if (checkSelfPermission(android.Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
+            true
+        } else {
+            requestPermissions(arrayOf(android.Manifest.permission.READ_EXTERNAL_STORAGE), STORAGE_PERMISSION_CODE)
+            false
+        }
+    }
+
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+
+        if (requestCode == STORAGE_PERMISSION_CODE) {
+            if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                Toast.makeText(this, "Storage permission granted", Toast.LENGTH_SHORT).show()
+                checkCompileStatus() // Try again after permission granted
+            } else {
+                Toast.makeText(this, "Storage permission denied", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+
 
     // Find / Replace
     private fun showFindReplaceDialog() {

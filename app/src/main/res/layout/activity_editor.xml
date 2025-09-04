@@ -52,6 +52,15 @@
             android:minWidth="48dp"
             android:minHeight="48dp"
             android:src="@drawable/ic_compile" />
+
+        <ImageButton
+            android:id="@+id/btn_check_compile"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:contentDescription="Check Compile Result"
+            android:src="@drawable/ic_status"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:tooltipText="Check Compilation Result" />
     </LinearLayout>
 
     <!-- Horizontal line separating top bar and edit screen -->
