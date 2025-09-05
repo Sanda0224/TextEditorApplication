@@ -52,30 +52,72 @@
             android:minWidth="48dp"
             android:minHeight="48dp"
             android:src="@drawable/ic_compile" />
+
+        <ImageButton
+            android:id="@+id/btn_check_compile"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:contentDescription="Check Compile Result"
+            android:src="@drawable/ic_status"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:tooltipText="Check Compilation Result" />
     </LinearLayout>
 
+    <!-- Horizontal line separating top bar and edit screen -->
     <View
         android:layout_width="match_parent"
         android:layout_height="5dp"
         android:background="#FF444444" />
 
-    <EditText
-        android:id="@+id/code_editor"
+    <HorizontalScrollView
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:background="#FFFAFAFA"
-        android:fontFamily="monospace"
-        android:gravity="top|start"
-        android:inputType="textMultiLine|textNoSuggestions|textVisiblePassword"
-        android:overScrollMode="always"
-        android:padding="8dp"
-        android:scrollbars="vertical"
-        android:textColor="#FF000000"
-        android:textSize="14sp" />
+        android:fillViewport="true">
 
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:orientation="horizontal">
 
-    <!-- Button Toolbar with Icons and Spacing -->
+            <!-- Line numbers -->
+            <ScrollView
+                android:id="@+id/line_number_scroll"
+                android:layout_width="40dp"
+                android:layout_height="match_parent"
+                android:fillViewport="true"
+                android:scrollbars="none"
+                android:background="#FFFFFF">
+
+                <TextView
+                    android:id="@+id/line_numbers"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="top|end"
+                    android:padding="8dp"
+                    android:textColor="#888888"
+                    android:textSize="14sp"
+                    android:fontFamily="monospace" />
+            </ScrollView>
+
+            <!-- Code editor -->
+            <EditText
+                android:id="@+id/code_editor"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="#FFFAFAFA"
+                android:fontFamily="monospace"
+                android:gravity="top|start"
+                android:inputType="textMultiLine|textNoSuggestions|textVisiblePassword"
+                android:overScrollMode="always"
+                android:padding="8dp"
+                android:scrollbars="vertical"
+                android:textColor="#FF000000"
+                android:textSize="14sp" />
+        </LinearLayout>
+    </HorizontalScrollView>
+
+    <!-- Button Toolbar -->
     <LinearLayout
         android:id="@+id/editOperationsBar"
         android:layout_width="match_parent"
